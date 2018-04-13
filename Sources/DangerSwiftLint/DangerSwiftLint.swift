@@ -29,10 +29,13 @@ internal extension SwiftLint {
         warnInlineAction: (String, String, Int) -> Void = warn) -> [Violation] {
         // Gathers modified+created files, invokes SwiftLint on each, and posts collected errors+warnings to Danger.
 
+        print("Directory: \(directory)")
         var files = danger.git.createdFiles + danger.git.modifiedFiles
+        print("Unfiltered files: \(files)")
         if let directory = directory {
             files = files.filter { $0.hasPrefix(directory) }
         }
+        print("Filtered files: \(files)")
         let decoder = JSONDecoder()
         let violations = files.filter { $0.hasSuffix(".swift") }.flatMap { file -> [Violation] in
             var arguments = ["lint", "--quiet", "--path \"\(file)\"", "--reporter json"]
@@ -58,6 +61,7 @@ internal extension SwiftLint {
         }
 
         if !violations.isEmpty {
+            print("Found violations")
             if inline {
                 violations.forEach { violation in
                     switch violation.severity {
@@ -77,6 +81,8 @@ internal extension SwiftLint {
                 markdownMessage += violations.map { $0.toMarkdown() }.joined(separator: "\n")
                 markdownAction(markdownMessage)
             }
+        } else {
+            print("Found no violations")
         }
 
         return violations
